@@ -14,7 +14,7 @@ class CustomTextController extends TextEditingController {
   void presetBoldchars(List<int>? _presetBoldchars) {
     if (_presetBoldchars != null) {
       boldChars = _presetBoldchars;
-      this.notifyListeners();
+      notifyListeners();
     }
   }
 
@@ -24,33 +24,45 @@ class CustomTextController extends TextEditingController {
     for (int char = selection.baseOffset;
         char < selection.extentOffset;
         char++) {
-      if (_markdown == Markdown.Bold) {
-        if (!boldChars.contains(char)) {
-          boldChars.add(char);
-          allSameStyle = false;
-        } else
-          tempChars.add(char);
-      }
-      if (_markdown == Markdown.Italic) {
-        if (!italicChars.contains(char)) {
-          italicChars.add(char);
-          allSameStyle = false;
-        } else
-          tempChars.add(char);
-      }
-      if (_markdown == Markdown.Underline) {
-        if (!underlinedChars.contains(char)) {
-          underlinedChars.add(char);
-          allSameStyle = false;
-        } else
-          tempChars.add(char);
+      switch (_markdown) {
+        case Markdown.Bold:
+          if (!boldChars.contains(char)) {
+            boldChars.add(char);
+            allSameStyle = false;
+          } else
+            tempChars.add(char);
+          break;
+        case Markdown.Italic:
+          if (!italicChars.contains(char)) {
+            italicChars.add(char);
+            allSameStyle = false;
+          } else
+            tempChars.add(char);
+          break;
+        case Markdown.Underline:
+          if (!underlinedChars.contains(char)) {
+            underlinedChars.add(char);
+            allSameStyle = false;
+          } else
+            tempChars.add(char);
+          break;
+        default:
       }
     }
     if (allSameStyle)
       tempChars.map((e) {
-        if (_markdown == Markdown.Bold) return boldChars.remove(e);
-        if (_markdown == Markdown.Italic) return italicChars.remove(e);
-        if (_markdown == Markdown.Underline) return underlinedChars.remove(e);
+        switch (_markdown) {
+          case Markdown.Bold:
+            boldChars.remove(e);
+            break;
+          case Markdown.Italic:
+            italicChars.remove(e);
+            break;
+          case Markdown.Underline:
+            italicChars.remove(e);
+            break;
+          default:
+        }
       }).toList();
     notifyListeners();
   }
