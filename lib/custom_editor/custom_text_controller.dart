@@ -3,23 +3,31 @@ import 'package:flutter/material.dart';
 enum Markdown { Bold, Italic, Underline }
 
 class CustomTextController extends TextEditingController {
-  CustomTextController({String text, bool bold}) : super(text: text);
+  CustomTextController({String? text}) : super(text: text);
 
   // Fields are self explanatory no comments REQUIRED
   List<int> boldChars = [];
   List<int> italicChars = [];
   List<int> underlinedChars = [];
 
-
-
   // For saved editor
-  void presetBoldchars(List _presetBoldchars) {
-    if (_presetBoldchars!=null) {
+  void presetBoldchars(List<int>? _presetBoldchars) {
+    if (_presetBoldchars != null) {
       boldChars = _presetBoldchars;
       this.notifyListeners();
     }
   }
 
+  List<int>? selectedMarkdown(Markdown _markdown) {
+    if (_markdown == Markdown.Bold) return boldChars;
+    if (_markdown == Markdown.Italic) return italicChars;
+    if (_markdown == Markdown.Underline) return underlinedChars;
+  }
+
+  void setSelectedWithStyle(Markdown _markdown) {
+    List<int> tempChars = [];
+    bool allSameStyle = true;
+  }
 
   void setSelectedBold() {
     // List of char position which are already bold
@@ -74,7 +82,7 @@ class CustomTextController extends TextEditingController {
 
   @override
   TextSpan buildTextSpan(
-      {BuildContext context, TextStyle style, bool withComposing}) {
+      {BuildContext? context, TextStyle? style, bool? withComposing}) {
     List<TextSpan> markdownTextSpans = [];
     List<String> textFieldCharacters = text.split('');
 
@@ -91,18 +99,18 @@ class CustomTextController extends TextEditingController {
       // if (char.runes.first.bitLength > 14)
       //   markdownTextSpans.add(TextSpan(text: ' '));
       // else
-        markdownTextSpans.add(
-          TextSpan(
-            text: char,
-            style: TextStyle(
-              decoration: charIsUnderlined
-                  ? TextDecoration.underline
-                  : TextDecoration.none,
-              fontWeight: charIsBold ? FontWeight.bold : FontWeight.normal,
-              fontStyle: charIsItalic ? FontStyle.italic : FontStyle.normal,
-            ),
+      markdownTextSpans.add(
+        TextSpan(
+          text: char,
+          style: TextStyle(
+            decoration: charIsUnderlined
+                ? TextDecoration.underline
+                : TextDecoration.none,
+            fontWeight: charIsBold ? FontWeight.bold : FontWeight.normal,
+            fontStyle: charIsItalic ? FontStyle.italic : FontStyle.normal,
           ),
-        );
+        ),
+      );
     }
     return TextSpan(style: style, children: markdownTextSpans);
   }
