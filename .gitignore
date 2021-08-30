@@ -9,6 +9,8 @@
 .history
 .svn/
 
+/lib/markdown
+
 # IntelliJ related
 *.iml
 *.ipr
