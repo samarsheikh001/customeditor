@@ -18,66 +18,41 @@ class CustomTextController extends TextEditingController {
     }
   }
 
-  List<int>? selectedMarkdown(Markdown _markdown) {
-    if (_markdown == Markdown.Bold) return boldChars;
-    if (_markdown == Markdown.Italic) return italicChars;
-    if (_markdown == Markdown.Underline) return underlinedChars;
-  }
-
   void setSelectedWithStyle(Markdown _markdown) {
     List<int> tempChars = [];
     bool allSameStyle = true;
-  }
-
-  void setSelectedBold() {
-    // List of char position which are already bold
-    List<int> tempChars = [];
-    bool allBold = true;
     for (int char = selection.baseOffset;
         char < selection.extentOffset;
         char++) {
-      if (!boldChars.contains(char)) {
-        boldChars.add(char);
-        allBold = false;
-      } else
-        tempChars.add(char);
+      if (_markdown == Markdown.Bold) {
+        if (!boldChars.contains(char)) {
+          boldChars.add(char);
+          allSameStyle = false;
+        } else
+          tempChars.add(char);
+      }
+      if (_markdown == Markdown.Italic) {
+        if (!italicChars.contains(char)) {
+          italicChars.add(char);
+          allSameStyle = false;
+        } else
+          tempChars.add(char);
+      }
+      if (_markdown == Markdown.Underline) {
+        if (!underlinedChars.contains(char)) {
+          underlinedChars.add(char);
+          allSameStyle = false;
+        } else
+          tempChars.add(char);
+      }
     }
-    if (allBold) tempChars.map((e) => boldChars.remove(e)).toList();
-    // Notifies [ TextField ] to rebuild itself. (helps avoid using setState()({}) which might cause performance issues)
-    this.notifyListeners();
-  }
-
-  void setSelectedItalic() {
-    List<int> tempChars = [];
-    bool allItalic = true;
-    for (int char = selection.baseOffset;
-        char < selection.extentOffset;
-        char++) {
-      if (!italicChars.contains(char)) {
-        italicChars.add(char);
-        allItalic = false;
-      } else
-        tempChars.add(char);
-      if (allItalic) tempChars.map((e) => italicChars.remove(e)).toList();
-    }
-    this.notifyListeners();
-  }
-
-  void setSelectedUnderlined() {
-    List<int> tempChars = [];
-    bool allUnderLined = true;
-    for (int char = selection.baseOffset;
-        char < selection.extentOffset;
-        char++) {
-      if (!underlinedChars.contains(char)) {
-        underlinedChars.add(char);
-        allUnderLined = false;
-      } else
-        tempChars.add(char);
-      if (allUnderLined)
-        tempChars.map((e) => underlinedChars.remove(e)).toList();
-    }
-    this.notifyListeners();
+    if (allSameStyle)
+      tempChars.map((e) {
+        if (_markdown == Markdown.Bold) return boldChars.remove(e);
+        if (_markdown == Markdown.Italic) return italicChars.remove(e);
+        if (_markdown == Markdown.Underline) return underlinedChars.remove(e);
+      }).toList();
+    notifyListeners();
   }
 
   @override

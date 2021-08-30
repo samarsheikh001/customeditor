@@ -26,6 +26,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late CustomTextController _controller;
 
+  List list = [1, 2, 3, 4, 5];
+
+  changeList(List _list) {
+    _list = [1];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -44,7 +50,9 @@ class _HomePageState extends State<HomePage> {
               ),
               TextButton(
                 onPressed: () {
-                  _controller.setSelectedBold();
+                  changeList(list);
+                  print(list);
+                  _controller.setSelectedWithStyle(Markdown.Italic);
                 },
                 child: Text('Set Bold'),
               )
