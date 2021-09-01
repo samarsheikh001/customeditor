@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum Markdown { Bold, Italic, Underline }
+enum Markdown { bold, italic, underline }
 
 class CustomTextController extends TextEditingController {
   CustomTextController({String? text}) : super(text: text);
@@ -25,45 +25,49 @@ class CustomTextController extends TextEditingController {
         char < selection.extentOffset;
         char++) {
       switch (_markdown) {
-        case Markdown.Bold:
+        case Markdown.bold:
           if (!boldChars.contains(char)) {
             boldChars.add(char);
             allSameStyle = false;
-          } else
+          } else {
             tempChars.add(char);
+          }
           break;
-        case Markdown.Italic:
+        case Markdown.italic:
           if (!italicChars.contains(char)) {
             italicChars.add(char);
             allSameStyle = false;
-          } else
+          } else {
             tempChars.add(char);
+          }
           break;
-        case Markdown.Underline:
+        case Markdown.underline:
           if (!underlinedChars.contains(char)) {
             underlinedChars.add(char);
             allSameStyle = false;
-          } else
+          } else {
             tempChars.add(char);
+          }
           break;
         default:
       }
     }
-    if (allSameStyle)
+    if (allSameStyle) {
       tempChars.map((e) {
         switch (_markdown) {
-          case Markdown.Bold:
+          case Markdown.bold:
             boldChars.remove(e);
             break;
-          case Markdown.Italic:
+          case Markdown.italic:
             italicChars.remove(e);
             break;
-          case Markdown.Underline:
+          case Markdown.underline:
             italicChars.remove(e);
             break;
           default:
         }
       }).toList();
+    }
     notifyListeners();
   }
 
