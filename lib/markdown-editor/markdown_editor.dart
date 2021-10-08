@@ -1,25 +1,26 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'custom_text_controller.dart';
+import 'custom_text_field.dart';
+import 'editor_storage.dart';
+import 'package:decks_app/extensions.dart';
 
 class MarkdownEditor {
-  // Class Initialisation.
-  // Note: Initialisation is necessary for listener to work.
   final VoidCallback notifyListeners;
-  MarkdownEditor(this.fileKey, this.notifyListeners) {
-    insertTextField(index: 0);
-  }
+
+  // File Key to get specific file
+  String editorKey;
 
   List<FocusNode> _nodes = [];
   List<CustomTextController> _controllers = [];
   List<Widget> _editorWidgets = [];
   List<String> _imageSource = [];
-
-  final String fileKey;
 
   // Getters
   List<FocusNode> get nodes => _nodes;
@@ -32,6 +33,12 @@ class MarkdownEditor {
 
   CustomTextController get getController => _controllers.first;
 
+  // Class Initialisation.
+  // Note: Initialisation is necessary for listener to work.
+  MarkdownEditor(this.editorKey, this.notifyListeners) {
+    insertTextField(index: 0);
+  }
+
   void clearEditor() {
     _nodes = [];
     _controllers = [];
@@ -42,43 +49,45 @@ class MarkdownEditor {
   void openSavedFile() async {
     clearEditor();
     // Getting storage
-    // final _editorStorage = EditorStorage();
-    // final text = await _editorStorage.readFileAsString(_fileKey);
-    // Map savedMarkdownFile = jsonDecode(text);
-    // List<String> _textFieldsText =
-    //     savedMarkdownFile['textFields'].cast<String>();
-    // List<String> _imgSources = savedMarkdownFile['imageSrcs'].cast<String>();
-    // List<dynamic> _boldCharsOfTextfields = savedMarkdownFile['boldChars'];
-    // // print('saved boldchars : $_boldCharsOfTextfields');
-    // for (int i = 0; i < _textFieldsText.length; i++) {
-    //   List<int> _tempBoldChars =
-    //       _boldCharsOfTextfields.elementAt(i).cast<int>();
-    //   // print('saved boldchars after : $_tempBoldChars');
-    //   // if (_textFieldsText.length > 1)
-    //   //   _tempBoldChars = _tempBoldChars.map((e) => e + (1)).toList();
-    //   insertTextField(
-    //       index: i,
-    //       text: _textFieldsText.elementAt(i),
-    //       presetBoldchars: _tempBoldChars);
-    //   if (i < (_textFieldsText.length - 1))
-    //     preSetImage(_imgSources.elementAt(i));
-    // }
+    final text = await EditorStorage.readFileAsString(editorKey);
+    Map savedMarkdownFile = jsonDecode(text);
+    List<String> _textFieldsText =
+        savedMarkdownFile['textFields'].cast<String>();
+    List<String> _imgSources = savedMarkdownFile['imageSrcs'].cast<String>();
+    List<dynamic> _boldCharsOfTextfields = savedMarkdownFile['boldChars'];
+    // print('saved boldchars : $_boldCharsOfTextfields');
+    for (int i = 0; i < _textFieldsText.length; i++) {
+      List<int> _tempBoldChars =
+          _boldCharsOfTextfields.elementAt(i).cast<int>();
+      // print('saved boldchars after : $_tempBoldChars');
+      // if (_textFieldsText.length > 1)
+      //   _tempBoldChars = _tempBoldChars.map((e) => e + (1)).toList();
+      insertTextField(
+          index: i,
+          text: _textFieldsText.elementAt(i),
+          presetBoldchars: _tempBoldChars);
+      if (i < (_textFieldsText.length - 1))
+        preSetImage(_imgSources.elementAt(i));
+    }
+    // print(text);
     // print('debug' * 20);
     // print(_controllers.length);
   }
 
-  void saveFile() async {
-    // List<String> _textFields = _controllers.map((e) => e.text).toList();
-    // List<List<int>> _boldChars = _controllers.map((e) => e.boldChars).toList();
+  Future<void> saveFile() async {
+    List<String> _textFields = _controllers.map((e) => e.text).toList();
+    List<List<int>> _boldChars = _controllers.map((e) => e.boldChars).toList();
     // print('BOLDCHARS ${_boldChars}');
-    // Map _map = {
-    //   'textFields': _textFields,
-    //   'boldChars': _boldChars,
-    //   'imageSrcs': _imageSource
-    // };
-    // final _editorStorage = EditorStorage();
-    // File file =
-    //     await _editorStorage.writeToFileAsString(_fileKey, jsonEncode(_map));
+    Map _map = {
+      'textFields': _textFields,
+      'boldChars': _boldChars,
+      'imageSrcs': _imageSource
+    };
+
+    // print(_map);
+    // Will be used ignore the warning
+    File file =
+        await EditorStorage.writeToFileAsString(editorKey, jsonEncode(_map));
   }
 
   void setStyle(Markdown _markdown) {
@@ -88,33 +97,49 @@ class MarkdownEditor {
           offset: _focusedController.selection.extentOffset);
   }
 
+  void addBullet() {
+    _focusedController
+      ..text += '\u2022'
+      ..selection =
+          TextSelection.collapsed(offset: _focusedController.text.length);
+  }
+
   // Get elements on index params.
   FocusNode nodeOfIndex(int index) => _nodes.elementAt(index);
   CustomTextController controllerOfIndex(int index) =>
       _controllers.elementAt(index);
 
-  void addImage() async {
+  void addImage(ImageSource _source) async {
     final int index = _controllers.length;
     final ImagePicker _picker = ImagePicker();
-    final image = await _picker.pickImage(source: ImageSource.gallery);
-    final imagePath = await image!.path;
-    editorWidgets.add(Padding(
-      padding: const EdgeInsets.all(18),
-      child: Image.file(
-        File(imagePath),
-      ),
-    ));
+    final image = await _picker.pickImage(source: _source);
+    final imagePath = image?.path;
+    editorWidgets.add(
+      Image.file(
+        File(imagePath!),
+      ).editorImage(),
+    );
     _imageSource.add(imagePath);
     insertTextField(index: index, text: '');
+    notifyListeners();
+  }
+
+  void addPainting(File file) {
+     final int index = _controllers.length;
+    editorWidgets.add(
+      Image.file(file),
+    );
+    _imageSource.add(file.path);
+    insertTextField(index: index, text: '');
+    notifyListeners();
   }
 
   void preSetImage(String src) {
-    editorWidgets.add(Padding(
-      padding: const EdgeInsets.all(18),
-      child: Image.file(
+    editorWidgets.add(
+      Image.file(
         File(src),
-      ),
-    ));
+      ).editorImage(),
+    );
     _imageSource.add(src);
   }
 
@@ -126,42 +151,49 @@ class MarkdownEditor {
     final CustomTextController _controller = CustomTextController(
         text: (index == 0 ? '' : '\u200B') +
             (text ?? '')); // Experimental/Testing (priority 1)
+    // final CustomTextController _controller =
+    //     CustomTextController(text: '\u200B' + (text ?? ''));
+    // Handles removing and adding of controller.
+    //TEST CODE
     String pastText = '';
     int pastBaseOffset = 0;
     int pastExtentOffset = 0;
     //TEST CODE
     void _listener() {
+      // print(
+      //     'Bold chars : ${_controller.boldChars} \n Controller text ${_controller.text.length}');
+
       if (!_controller.text.startsWith('\u200B')) {
         final int index = _controllers.indexOf(_controller);
         if (index > 0) {
           final _previousController = controllerOfIndex(index - 1);
           // Repositioning boldchars with other controller
-          _controller
-            ..boldChars
-                .map((e) => _previousController.boldChars
-                    .add(e + _previousController.text.length - 1))
-                .toList()
-            ..italicChars
-                .map((e) => _previousController.italicChars
-                    .add(e + _previousController.text.length - 1))
-                .toList()
-            ..underlinedChars
-                .map((e) => _previousController.underlinedChars
-                    .add(e + _previousController.text.length - 1))
-                .toList();
-          _previousController
-            ..text += _controller.text
-            ..selection = TextSelection.fromPosition(
-              TextPosition(
-                  offset: _previousController.text.length -
-                      _controller.text.length),
-            );
+          _controller.boldChars
+              .map((e) => _previousController.boldChars
+                  .add(e + _previousController.text.length - 1))
+              .toList();
+          _controller.italicChars
+              .map((e) => _previousController.italicChars
+                  .add(e + _previousController.text.length - 1))
+              .toList();
+          _controller.underlinedChars
+              .map((e) => _previousController.underlinedChars
+                  .add(e + _previousController.text.length - 1))
+              .toList();
+          _previousController.text += _controller.text;
+          _previousController.selection = TextSelection.fromPosition(
+            TextPosition(
+                offset:
+                    _previousController.text.length - _controller.text.length),
+          );
           nodeOfIndex(index - 1).requestFocus();
           _controllers.removeAt(index);
           _nodes.removeAt(index);
-          //TODO: Improvements needed.
-          _editorWidgets..removeAt(index * 2)..removeAt((index * 2) - 1);
-          notifyListeners();
+          //TODO: Improvements needed [Done].
+          _imageSource.removeAt(_imageSource.length - 1);
+          _editorWidgets.removeAt(index * 2);
+          _editorWidgets.removeAt((index * 2) - 1);
+          // notifyListeners();
         }
       }
       // TEST CODE
@@ -187,19 +219,18 @@ class MarkdownEditor {
 
       // Adjusting [boldChars], [italicChars] etc. position based on text change
       if (cursorPosition != 0 && textChanged && nodeOfIndex(index!).hasFocus) {
-        _controller
-          ..boldChars = _controller.boldChars.map((e) {
-            if (e >= pastBaseOffset) return e + cursorPosition;
-            return e;
-          }).toList()
-          ..italicChars = _controller.italicChars.map((e) {
-            if (e >= pastBaseOffset) return e + cursorPosition;
-            return e;
-          }).toList()
-          ..underlinedChars = _controller.underlinedChars.map((e) {
-            if (e >= pastBaseOffset) return e + cursorPosition;
-            return e;
-          }).toList();
+        _controller.boldChars = _controller.boldChars.map((e) {
+          if (e >= pastBaseOffset) return e + cursorPosition;
+          return e;
+        }).toList();
+        _controller.italicChars = _controller.italicChars.map((e) {
+          if (e >= pastBaseOffset) return e + cursorPosition;
+          return e;
+        }).toList();
+        _controller.underlinedChars = _controller.underlinedChars.map((e) {
+          if (e >= pastBaseOffset) return e + cursorPosition;
+          return e;
+        }).toList();
       }
 
       // HANDLE CUT & PASTE
@@ -221,44 +252,45 @@ class MarkdownEditor {
       // [pastBaseOffset - pastExtentOffset] difference between previous selection.
 
       // Returns true if text is being cut (Doesnt work in case of removing text using BACKSPACE)
-      bool cutText = selectionCursorPositionChange < 0 &&
+      bool cutText = (selectionCursorPositionChange) < 0 &&
           textChanged &&
           nodeOfIndex(index!).hasFocus;
 
       if (cutText) {
         // Remove [boldChars] and [italicChars] of given text that has been CUT
-        print('CURRENT DEBUG ${_controller.boldChars}');
+        // print('CURRENT DEBUG ${_controller.boldChars}');
         for (int i = pastBaseOffset; i < pastExtentOffset; i++) {
           _controller.boldChars.remove(i);
           _controller.italicChars.remove(i);
           _controller.underlinedChars.remove(i);
         }
-        print('CURRENT DEBUG ${_controller.boldChars}');
-        print('selectionCursorPositionChange : $selectionCursorPositionChange');
+        // print('CURRENT DEBUG ${_controller.boldChars}');
+        // print('selectionCursorPositionChange : $selectionCursorPositionChange');
 
         // Maps [boldChars] and [italicChars] to the new position
-        print('BEFORE ITERATE ${_controller.boldChars}');
-        print('PAST EXTENT OFFSET $pastExtentOffset');
+        // print('BEFORE ITERATE ${_controller.boldChars}');
+        // print('PAST EXTENT OFFSET $pastExtentOffset');
         _controller.boldChars = _controller.boldChars.map((e) {
-          if (e >= pastExtentOffset) return e + selectionCursorPositionChange;
+          if (e >= pastExtentOffset) return (e + selectionCursorPositionChange);
           return e;
         }).toList();
-        print('AFTER ITERATE ${_controller.boldChars}');
-        _controller
-          ..italicChars = _controller.italicChars.map((e) {
-            if (e >= pastExtentOffset) return e + selectionCursorPositionChange;
-            return e;
-          }).toList()
-          ..underlinedChars = _controller.underlinedChars.map((e) {
-            if (e >= pastExtentOffset) return e + selectionCursorPositionChange;
-            return e;
-          }).toList();
+        // print('AFTER ITERATE ${_controller.boldChars}');
+        _controller.italicChars = _controller.italicChars.map((e) {
+          if (e >= pastExtentOffset) return (e + selectionCursorPositionChange);
+          return e;
+        }).toList();
+        _controller.underlinedChars = _controller.underlinedChars.map((e) {
+          if (e >= pastExtentOffset) return (e + selectionCursorPositionChange);
+          return e;
+        }).toList();
       }
 
       pastText = _controller.text;
       pastBaseOffset = _controller.selection.baseOffset;
       pastExtentOffset = _controller.selection.extentOffset;
+
       notifyListeners();
+      // TEST CODE
     }
 
     // Adding listener to newly created controller [CustomTextController].
@@ -267,7 +299,7 @@ class MarkdownEditor {
     // Inserting [Controller] and [FocusNode] with respective [CustomTextField]
     _controllers.insert(index!, _controller);
     _nodes.insert(index, FocusNode());
-    _editorWidgets.add(TextField(
+    _editorWidgets.add(CustomTextField(
       // Passing key is too important to avoid weird behavior of keystroking
       key: UniqueKey(),
       controller: controllerOfIndex(index),
@@ -275,9 +307,9 @@ class MarkdownEditor {
     ));
 
     // Focus on last added [CustomTextField]
-    _nodes.last.requestFocus();
+    if (_nodes.length != 1) _nodes.last.requestFocus();
     // Delay is necessary to set controller's text before adding bold
-    Future.delayed(const Duration(seconds: 1), () {
+    Future.delayed(Duration(seconds: 1), () {
       _controller.presetBoldchars(presetBoldchars);
     });
     notifyListeners();

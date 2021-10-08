@@ -1,6 +1,6 @@
 {
-    "name": "customeditor",
-    "short_name": "customeditor",
+    "name": "decks_app",
+    "short_name": "decks_app",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

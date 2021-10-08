@@ -1,10 +1,8 @@
-# customeditor
+# decks_app
 
 A new Flutter project.
 
 ## Getting Started
-
-git push -u origin main
 
 This project is a starting point for a Flutter application.
 
